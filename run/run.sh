@@ -5,7 +5,7 @@ VERSION=1.0
 
 function usage() {
     echo "sh run.sh <type>"
-    echo "type: HBaseWrite / HBaseStabilityTester / CreateHTable / HBaseSelect / HBaseCount / HBaseDelete / HBaseOperate / HBaseDump"
+    echo "type: HBaseWrite / HBaseStabilityTester / CreateHTable / HBaseSelect / HBaseCount / HBaseDelete / HBaseOperate / HBaseDump / HBaseLoadTable"
 }
 
 
@@ -30,6 +30,8 @@ elif [ $1 == "HBaseOperator" ];then
     CLASS_FILE="com.wandoujia.hbase.manager.HBaseOperate"
 elif [ $1 == "HBaseDump" ];then
     CLASS_FILE="com.wandoujia.hbase.manager.HBaseDump"
+elif [ $1 == "HBaseLoadTable" ];then
+    CLASS_FILE="com.wandoujia.hbase.manager.HBaseLoadTable"
 fi
 
 PARAS="$2"

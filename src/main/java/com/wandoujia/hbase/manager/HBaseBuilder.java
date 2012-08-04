@@ -167,9 +167,6 @@ public class HBaseBuilder {
                 bloomType, compressionType, inMemory, blockCacheEnabled,
                 blockSize, maxVersions);
         getAdmin().createTable(table, splits);
-        if (!getAdmin().isTableEnabled(tableName)) {
-            getAdmin().enableTable(tableName);
-        }
         return table;
     }
 
