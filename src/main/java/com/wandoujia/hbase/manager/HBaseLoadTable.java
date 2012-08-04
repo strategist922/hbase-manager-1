@@ -53,6 +53,7 @@ public class HBaseLoadTable {
             String[] fields = line.split("\t");
             if (qualifiers.length > fields.length) {
                 System.out.println("fields num not match: " + line);
+                continue;
             }
             String rowKey = fields[0];
             Map<String, byte[]> values = new HashMap<String, byte[]>();

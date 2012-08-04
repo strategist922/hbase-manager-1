@@ -41,6 +41,5 @@ cd ..
 CLASSPATH=${CLASSPATH}:./conf
 CLASSPATH=${CLASSPATH}:./$SERVICE-$VERSION-jar-with-dependencies.jar
 export CLASSPATH
-
 mkdir ./log >/dev/null 2>&1
 java -Xms128m -Xmx1024m $CLASS_FILE $PARAS
