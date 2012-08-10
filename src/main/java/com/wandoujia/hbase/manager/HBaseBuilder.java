@@ -63,6 +63,11 @@ public class HBaseBuilder {
         return new HBaseBuilder();
     }
 
+    public void setWriteBufferSize(long size) throws IOException {
+        table.setAutoFlush(false);
+        table.setWriteBufferSize(size);
+    }
+
     /**
      * @param host
      *            zookeeper host
