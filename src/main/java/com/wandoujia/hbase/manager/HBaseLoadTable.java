@@ -39,6 +39,7 @@ public class HBaseLoadTable {
         String tableName = args[0];
         String qualifiers[] = args[1].split(",");
         String localFile = args[2];
+        int rowCounter = 0;
         byte[][] splits = null;
 
         HBaseClient hb = new HBaseClient();
@@ -65,8 +66,18 @@ public class HBaseLoadTable {
                 }
             }
             hb.insert(rowKey, FAMILY_NAME, values);
+            rowCounter++;
+            if (rowCounter % BATCH_SIZE == 0) {
+                System.out.println(String.format(
+                        "Already loading %d rows , continue loading...",
+                        rowCounter));
+            }
         }
+        // make sure the last batch rows flushed
         hb.getTable().flushCommits();
         hb.getTable().close();
+        System.out.println(String.format(
+                "Loading to table %s finished, totally %d rows.", tableName,
+                rowCounter));
     }
 }
