@@ -57,7 +57,7 @@ public class HBaseFileWrite {
         listFiles(readPath, fileList);
         System.out.println("files num: " + fileList.size());
 
-        HBaseBuilder hb = new HBaseBuilder();
+        HBaseClient hb = new HBaseClient();
         hb.setTableName(tableName);
 
         for (String path: fileList) {

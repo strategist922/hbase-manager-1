@@ -40,7 +40,7 @@ public class HBaseDelete {
         System.out.println("opers: " + opers.toString());
 
         long start = System.currentTimeMillis();
-        HBaseBuilder hb = new HBaseBuilder();
+        HBaseClient hb = new HBaseClient();
         hb.setTableName(tableName);
         long affectRows = hb.deleteByFilter(startRow, stopRow, filters, opers);
         long consumes = System.currentTimeMillis() - start;

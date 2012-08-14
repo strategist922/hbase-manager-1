@@ -23,11 +23,11 @@ public class CreateHTable {
 
         byte[][] splits = null;
         if (args.length == 6) {
-            splits = HBaseBuilder.getHexSplits(args[3], args[4],
+            splits = HBaseClient.getHexSplits(args[3], args[4],
                     Integer.parseInt(args[5]));
         }
         
-        HBaseBuilder hb = new HBaseBuilder();
+        HBaseClient hb = new HBaseClient();
         hb.create(tableName, familyName, BloomType.ROW, Algorithm.NONE, false,
                 true, blockSize, 1, splits);
     }

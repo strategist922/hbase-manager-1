@@ -18,7 +18,7 @@ public class HBaseOperate {
         }
 
         String opType = args[0];
-        HBaseBuilder hb = new HBaseBuilder();
+        HBaseClient hb = new HBaseClient();
 
         long start = System.currentTimeMillis();
         if (opType.equals("list")) {

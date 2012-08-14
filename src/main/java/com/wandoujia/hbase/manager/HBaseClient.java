@@ -32,11 +32,11 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HBaseBuilder {
+public class HBaseClient {
     private static final Logger LOG = LoggerFactory
-            .getLogger(HBaseBuilder.class);
+            .getLogger(HBaseClient.class);
 
-    public static String defaultFamily = "content";
+    public static String defaultFamily = "c";
 
     private static int scannerCacheing = 10000;
 
@@ -49,18 +49,18 @@ public class HBaseBuilder {
      */
     private HTable table;
 
-    protected HBaseBuilder() {
+    protected HBaseClient() {
         conf = HBaseConfiguration.create();
         LOG.info("zookeeper quorum: {}", conf.get(HConstants.ZOOKEEPER_QUORUM));
     }
 
-    protected HBaseBuilder(Configuration conf) {
+    protected HBaseClient(Configuration conf) {
         this.conf = conf;
         LOG.info("zookeeper quorum: {}", conf.get(HConstants.ZOOKEEPER_QUORUM));
     }
 
-    public static HBaseBuilder connect() {
-        return new HBaseBuilder();
+    public static HBaseClient connect() {
+        return new HBaseClient();
     }
 
     public void setWriteBufferSize(long size) throws IOException {
@@ -73,21 +73,21 @@ public class HBaseBuilder {
      *            zookeeper host
      * @return
      */
-    public static HBaseBuilder connect(String host) {
+    public static HBaseClient connect(String host) {
         Configuration conf = HBaseConfiguration.create();
         conf.set(HConstants.ZOOKEEPER_QUORUM, host);
-        return new HBaseBuilder(conf);
+        return new HBaseClient(conf);
     }
 
     /**
      * @param conf
      * @return
      */
-    public static HBaseBuilder connect(HBaseConfiguration conf) {
-        return new HBaseBuilder(conf);
+    public static HBaseClient connect(HBaseConfiguration conf) {
+        return new HBaseClient(conf);
     }
 
-    public static HBaseBuilder connect(Map<String, Object> args)
+    public static HBaseClient connect(Map<String, Object> args)
             throws IOException {
         String host = (String) args.remove("host");
         String tableName = (String) args.remove("table");
@@ -116,7 +116,7 @@ public class HBaseBuilder {
         if (host != null) {
             conf.set(HConstants.ZOOKEEPER_QUORUM, host);
         }
-        HBaseBuilder hb = new HBaseBuilder(conf);
+        HBaseClient hb = new HBaseClient(conf);
         hb.setTableName(tableName);
         return hb;
     }

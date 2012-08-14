@@ -43,7 +43,7 @@ public class HBaseSelect {
         System.out.println("opers: " + opers.toString());
 
         long start = System.currentTimeMillis();
-        HBaseBuilder hb = new HBaseBuilder();
+        HBaseClient hb = new HBaseClient();
         hb.setTableName(tableName);
 
         List<Map<String, String>> results = hb.selectByFilter(startRow,

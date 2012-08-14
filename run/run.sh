@@ -26,7 +26,7 @@ elif [ $1 == "HBaseCount" ];then
     CLASS_FILE="com.wandoujia.hbase.manager.HBaseCount"
 elif [ $1 == "HBaseDelete" ];then
     CLASS_FILE="com.wandoujia.hbase.manager.HBaseDelete"
-elif [ $1 == "HBaseOperator" ];then
+elif [ $1 == "HBaseOperate" ];then
     CLASS_FILE="com.wandoujia.hbase.manager.HBaseOperate"
 elif [ $1 == "HBaseDump" ];then
     CLASS_FILE="com.wandoujia.hbase.manager.HBaseDump"

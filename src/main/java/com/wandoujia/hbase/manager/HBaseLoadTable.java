@@ -41,7 +41,7 @@ public class HBaseLoadTable {
         String localFile = args[2];
         byte[][] splits = null;
 
-        HBaseBuilder hb = new HBaseBuilder();
+        HBaseClient hb = new HBaseClient();
         HTableDescriptor desc = hb.create(tableName, FAMILY_NAME,
                 BloomType.ROW, Algorithm.NONE, false, true, BLOCK_SIZE, 1,
                 splits);

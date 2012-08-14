@@ -42,7 +42,7 @@ public class HBaseCount {
         System.out.println("opers: " + opers.toString());
 
         long start = System.currentTimeMillis();
-        HBaseBuilder hb = new HBaseBuilder();
+        HBaseClient hb = new HBaseClient();
         hb.setTableName(tableName);
         long counter = hb.countByFilter(startRow, stopRow, filters, opers);
         long consumes = System.currentTimeMillis() - start;

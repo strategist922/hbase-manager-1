@@ -45,7 +45,7 @@ public class HBaseDump {
         System.out.println("filters: " + filters.toString());
         System.out.println("opers: " + opers.toString());
 
-        HBaseBuilder hb = new HBaseBuilder();
+        HBaseClient hb = new HBaseClient();
         hb.setTableName(tableName);
 
         BufferedWriter writer = new BufferedWriter(new FileWriter(
