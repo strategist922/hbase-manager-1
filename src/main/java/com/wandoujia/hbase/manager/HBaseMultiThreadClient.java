@@ -100,11 +100,13 @@ public class HBaseMultiThreadClient {
      * @throws IOException
      */
     public Map<String, byte[]> get(String tableName, String rowKey,
-            String family, Set<String> columns) throws IOException {
+            String family, Set<String> columns, boolean cacheBlocks)
+            throws IOException {
         HTable hTable = (HTable) tablePool.getTable(tableName);
         try {
             Result result = null;
             Get get = new Get(rowKey.getBytes());
+            get.setCacheBlocks(cacheBlocks);
             for (String column: columns) {
                 get.addColumn(family.getBytes(), column.getBytes());
             }

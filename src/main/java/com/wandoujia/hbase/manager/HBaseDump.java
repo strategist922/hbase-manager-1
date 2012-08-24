@@ -53,7 +53,7 @@ public class HBaseDump {
 
         long start = System.currentTimeMillis();
         long rows = hb.dumpByFilter(startRow, stopRow, filters, opers,
-                qualifiers.split(","), writer);
+                qualifiers.split(","), writer, false);
         long consumes = System.currentTimeMillis() - start;
         System.out.println("Dump Rows: " + rows);
         System.out.println("Use Time(s): " + consumes / 1000f);

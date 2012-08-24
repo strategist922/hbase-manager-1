@@ -42,7 +42,8 @@ public class HBaseDelete {
         long start = System.currentTimeMillis();
         HBaseClient hb = new HBaseClient();
         hb.setTableName(tableName);
-        long affectRows = hb.deleteByFilter(startRow, stopRow, filters, opers);
+        long affectRows = hb.deleteByFilter(startRow, stopRow, filters, opers,
+                false);
         long consumes = System.currentTimeMillis() - start;
 
         System.out.println("Affect Rows: " + affectRows);

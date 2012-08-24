@@ -47,7 +47,7 @@ public class HBaseSelect {
         hb.setTableName(tableName);
 
         List<Map<String, String>> results = hb.selectByFilter(startRow,
-                stopRow, filters, opers);
+                stopRow, filters, opers, false);
         long consumes = System.currentTimeMillis() - start;
 
         String header = "";

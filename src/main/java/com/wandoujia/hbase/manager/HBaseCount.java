@@ -44,7 +44,8 @@ public class HBaseCount {
         long start = System.currentTimeMillis();
         HBaseClient hb = new HBaseClient();
         hb.setTableName(tableName);
-        long counter = hb.countByFilter(startRow, stopRow, filters, opers);
+        long counter = hb.countByFilter(startRow, stopRow, filters, opers,
+                false);
         long consumes = System.currentTimeMillis() - start;
 
         System.out.println("Find Rows: " + counter);

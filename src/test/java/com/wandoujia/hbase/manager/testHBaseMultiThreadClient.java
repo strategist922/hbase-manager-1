@@ -35,7 +35,7 @@ public class testHBaseMultiThreadClient extends TestCase {
     public void testGet1() throws IOException {
         HBaseMultiThreadClient client = new HBaseMultiThreadClient();
         Map<String, byte[]> row = client.get(defaultTableName, defaultRowKey,
-                defaultFamily, defaultColumns);
+                defaultFamily, defaultColumns, false);
         if (row.get("source") != null) {
             System.out.println(new String(row.get("source")));
         }
@@ -45,7 +45,7 @@ public class testHBaseMultiThreadClient extends TestCase {
     public void testGet2() throws IOException {
         HBaseMultiThreadClient client = new HBaseMultiThreadClient(10, 10240);
         Map<String, byte[]> row = client.get(defaultTableName, defaultRowKey,
-                defaultFamily, defaultColumns);
+                defaultFamily, defaultColumns, false);
         if (row.get(defaultColumn) != null) {
             System.out.println(new String(row.get(defaultColumn)));
         }

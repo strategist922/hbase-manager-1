@@ -3,7 +3,6 @@ package com.wandoujia.hbase.manager;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,66 +58,9 @@ public class HBaseClient {
         LOG.info("zookeeper quorum: {}", conf.get(HConstants.ZOOKEEPER_QUORUM));
     }
 
-    public static HBaseClient connect() {
-        return new HBaseClient();
-    }
-
     public void setWriteBufferSize(long size) throws IOException {
         table.setAutoFlush(false);
         table.setWriteBufferSize(size);
-    }
-
-    /**
-     * @param host
-     *            zookeeper host
-     * @return
-     */
-    public static HBaseClient connect(String host) {
-        Configuration conf = HBaseConfiguration.create();
-        conf.set(HConstants.ZOOKEEPER_QUORUM, host);
-        return new HBaseClient(conf);
-    }
-
-    /**
-     * @param conf
-     * @return
-     */
-    public static HBaseClient connect(HBaseConfiguration conf) {
-        return new HBaseClient(conf);
-    }
-
-    public static HBaseClient connect(Map<String, Object> args)
-            throws IOException {
-        String host = (String) args.remove("host");
-        String tableName = (String) args.remove("table");
-        String confURL = (String) args.remove("confURL");
-        Configuration conf = HBaseConfiguration.create();
-        if (confURL != null) {
-            conf.addResource(new URL(confURL));
-        }
-        for (Map.Entry<String, Object> entry: args.entrySet()) {
-            String key = entry.getKey();
-            Object val = entry.getValue();
-            if (val == null) {
-                continue;
-            } else if (val instanceof Integer) {
-                conf.setInt(key, (Integer) val);
-            } else if (val instanceof Long) {
-                conf.setLong(key, (Long) val);
-            } else if (val instanceof Boolean) {
-                conf.setBoolean(key, (Boolean) val);
-            } else if (val instanceof String[]) {
-                conf.setStrings(key, (String[]) val);
-            } else {
-                conf.set(key, val.toString());
-            }
-        }
-        if (host != null) {
-            conf.set(HConstants.ZOOKEEPER_QUORUM, host);
-        }
-        HBaseClient hb = new HBaseClient(conf);
-        hb.setTableName(tableName);
-        return hb;
     }
 
     public static byte[][] getHexSplits(String startKey, String endKey,
@@ -227,10 +169,12 @@ public class HBaseClient {
      * @throws IOException
      */
     public synchronized Map<String, byte[]> getRow(String rowKey,
-            String family, Set<String> qualifiers) throws IOException {
+            String family, Set<String> qualifiers, boolean cacheBlocks)
+            throws IOException {
         HTable table = getTable();
         Result result = null;
         Get get = new Get(rowKey.getBytes());
+        get.setCacheBlocks(cacheBlocks);
         for (String qualifier: qualifiers) {
             get.addColumn(family.getBytes(), qualifier.getBytes());
         }
@@ -243,11 +187,12 @@ public class HBaseClient {
     }
 
     public synchronized long countByFilter(String startRow, String stopRow,
-            Map<String, String> filters, Map<String, CompareOp> opers)
-            throws IOException {
+            Map<String, String> filters, Map<String, CompareOp> opers,
+            boolean cacheBlocks) throws IOException {
         long result = 0;
 
-        ResultScanner scanner = this.select(startRow, stopRow, filters, opers);
+        ResultScanner scanner = this.getScanner(startRow, stopRow, filters,
+                opers, cacheBlocks);
 
         for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
             Map<String, String> record = getRecord(rr);
@@ -261,10 +206,11 @@ public class HBaseClient {
     }
 
     public synchronized long deleteByFilter(String startRow, String stopRow,
-            Map<String, String> filters, Map<String, CompareOp> opers)
-            throws IOException {
+            Map<String, String> filters, Map<String, CompareOp> opers,
+            boolean cacheBlocks) throws IOException {
         long affectRows = 0;
-        ResultScanner scanner = this.select(startRow, stopRow, filters, opers);
+        ResultScanner scanner = this.getScanner(startRow, stopRow, filters,
+                opers, cacheBlocks);
 
         for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
             Map<String, String> record = getRecord(rr);
@@ -305,13 +251,15 @@ public class HBaseClient {
 
     public synchronized List<Map<String, String>> selectByFilter(
             String startRow, String stopRow, Map<String, String> filters,
-            Map<String, CompareOp> opers) throws IOException {
+            Map<String, CompareOp> opers, boolean cacheBlocks)
+            throws IOException {
 
         int readCounter = 0;
         int maxReadCounter = 300000;
 
         List<Map<String, String>> results = new ArrayList<Map<String, String>>();
-        ResultScanner scanner = this.select(startRow, stopRow, filters, opers);
+        ResultScanner scanner = this.getScanner(startRow, stopRow, filters,
+                opers, cacheBlocks);
         for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
             Map<String, String> record = getRecord(rr);
             if (!isValid(record, filters)) {
@@ -320,8 +268,6 @@ public class HBaseClient {
             readCounter++;
             results.add(record);
             if (readCounter >= maxReadCounter) {
-                LOG.warn("scaner breaked!!! has more record...");
-                LOG.warn("scaner breaked!!! has more record...");
                 LOG.warn("scaner breaked!!! has more record...");
                 break;
             }
@@ -332,14 +278,16 @@ public class HBaseClient {
 
     public synchronized long dumpByFilter(String startRow, String stopRow,
             Map<String, String> filters, Map<String, CompareOp> opers,
-            String[] qualifiers, BufferedWriter writer) throws IOException {
+            String[] qualifiers, BufferedWriter writer, boolean cacheBlocks)
+            throws IOException {
 
         long rows = 0;
         HashMap<String, String> map = new HashMap<String, String>();
         for (String qualifier: qualifiers) {
             map.put(qualifier, "");
         }
-        ResultScanner scanner = this.select(startRow, stopRow, filters, opers);
+        ResultScanner scanner = this.getScanner(startRow, stopRow, filters,
+                opers, cacheBlocks);
         for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
             Map<String, String> record = getRecord(rr);
             if (!isValid(record, filters)) {
@@ -372,12 +320,14 @@ public class HBaseClient {
         return rows;
     }
 
-    public synchronized ResultScanner select(String startRow, String stopRow,
-            Map<String, String> filters, Map<String, CompareOp> opers)
+    public synchronized ResultScanner getScanner(String startRow,
+            String stopRow, Map<String, String> filters,
+            Map<String, CompareOp> opers, boolean cacheBlocks)
             throws IOException {
 
         FilterList filterList = new FilterList();
         Scan scan = new Scan(Bytes.toBytes(startRow), Bytes.toBytes(stopRow));
+        scan.setCacheBlocks(cacheBlocks);
 
         for (Map.Entry<String, String> entry: filters.entrySet()) {
             filterList
