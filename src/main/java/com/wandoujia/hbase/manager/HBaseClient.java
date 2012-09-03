@@ -11,7 +11,6 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Delete;
@@ -28,18 +27,14 @@ import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.io.hfile.Compression.Algorithm;
 import org.apache.hadoop.hbase.regionserver.StoreFile.BloomType;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class HBaseClient {
-    private static final Logger LOG = LoggerFactory
-            .getLogger(HBaseClient.class);
 
     public static String defaultFamily = "c";
 
     private static int scannerCacheing = 10000;
 
-    private Configuration conf;
+    private static Configuration conf = HBaseConfiguration.create();
 
     private HBaseAdmin admin;
 
@@ -48,14 +43,12 @@ public class HBaseClient {
      */
     private HTable table;
 
-    protected HBaseClient() {
-        conf = HBaseConfiguration.create();
-        LOG.info("zookeeper quorum: {}", conf.get(HConstants.ZOOKEEPER_QUORUM));
+    public HBaseClient() {
+
     }
 
-    protected HBaseClient(Configuration conf) {
-        this.conf = conf;
-        LOG.info("zookeeper quorum: {}", conf.get(HConstants.ZOOKEEPER_QUORUM));
+    public HBaseClient(Configuration conf) {
+        HBaseClient.conf = conf;
     }
 
     public void setWriteBufferSize(long size) throws IOException {
@@ -107,7 +100,6 @@ public class HBaseClient {
             Boolean blockCacheEnabled, int blockSize, int maxVersions,
             byte[][] splits) throws IOException {
         if (getAdmin().tableExists(tableName)) {
-            LOG.warn("{} table has exists.", tableName);
             return null;
         }
         HTableDescriptor table = getTableDescriptor(tableName, familyName,
@@ -140,7 +132,7 @@ public class HBaseClient {
 
     public HBaseAdmin getAdmin() throws IOException {
         if (this.admin == null)
-            this.admin = new HBaseAdmin(this.conf);
+            this.admin = new HBaseAdmin(conf);
         return this.admin;
     }
 
@@ -190,18 +182,21 @@ public class HBaseClient {
             Map<String, String> filters, Map<String, CompareOp> opers,
             boolean cacheBlocks) throws IOException {
         long result = 0;
-
         ResultScanner scanner = this.getScanner(startRow, stopRow, filters,
                 opers, cacheBlocks);
-
-        for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
-            Map<String, String> record = getRecord(rr);
-            if (!isValid(record, filters)) {
-                continue;
+        try {
+            for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
+                Map<String, String> record = getRecord(rr);
+                if (!isValid(record, filters)) {
+                    continue;
+                }
+                result++;
             }
-            result++;
+        } finally {
+            if (scanner != null) {
+                scanner.close();
+            }
         }
-        scanner.close();
         return result;
     }
 
@@ -211,18 +206,22 @@ public class HBaseClient {
         long affectRows = 0;
         ResultScanner scanner = this.getScanner(startRow, stopRow, filters,
                 opers, cacheBlocks);
-
-        for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
-            Map<String, String> record = getRecord(rr);
-            if (!isValid(record, filters)) {
-                continue;
+        try {
+            for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
+                Map<String, String> record = getRecord(rr);
+                if (!isValid(record, filters)) {
+                    continue;
+                }
+                Delete delete = new Delete(rr.getRow());
+                table.delete(delete);
+                affectRows++;
             }
-            Delete delete = new Delete(rr.getRow());
-            table.delete(delete);
-            affectRows++;
+            table.flushCommits();
+        } finally {
+            if (scanner != null) {
+                scanner.close();
+            }
         }
-        table.flushCommits();
-        scanner.close();
         return affectRows;
     }
 
@@ -260,19 +259,24 @@ public class HBaseClient {
         List<Map<String, String>> results = new ArrayList<Map<String, String>>();
         ResultScanner scanner = this.getScanner(startRow, stopRow, filters,
                 opers, cacheBlocks);
-        for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
-            Map<String, String> record = getRecord(rr);
-            if (!isValid(record, filters)) {
-                continue;
+
+        try {
+            for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
+                Map<String, String> record = getRecord(rr);
+                if (!isValid(record, filters)) {
+                    continue;
+                }
+                readCounter++;
+                results.add(record);
+                if (readCounter >= maxReadCounter) {
+                    break;
+                }
             }
-            readCounter++;
-            results.add(record);
-            if (readCounter >= maxReadCounter) {
-                LOG.warn("scaner breaked!!! has more record...");
-                break;
+        } finally {
+            if (scanner != null) {
+                scanner.close();
             }
         }
-        scanner.close();
         return results;
     }
 
@@ -288,35 +292,42 @@ public class HBaseClient {
         }
         ResultScanner scanner = this.getScanner(startRow, stopRow, filters,
                 opers, cacheBlocks);
-        for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
-            Map<String, String> record = getRecord(rr);
-            if (!isValid(record, filters)) {
-                continue;
-            }
-
-            map.put("row_key", new String(rr.getRow()));
-            for (Map.Entry<String, String> entry: record.entrySet()) {
-                if (map.containsKey(entry.getKey())) {
-                    map.put(entry.getKey(), entry.getValue());
+        try {
+            for (Result rr = scanner.next(); rr != null; rr = scanner.next()) {
+                Map<String, String> record = getRecord(rr);
+                if (!isValid(record, filters)) {
+                    continue;
                 }
-            }
 
-            rows += 1;
-            int len = qualifiers.length;
-            String line = "";
-            for (int i = 0; i < len; i++) {
-                String qualifier = qualifiers[i];
-                if (i == (len - 1)) {
-                    line += map.get(qualifier);
-                } else {
-                    line += map.get(qualifier) + "\t";
+                map.put("row_key", new String(rr.getRow()));
+                for (Map.Entry<String, String> entry: record.entrySet()) {
+                    if (map.containsKey(entry.getKey())) {
+                        map.put(entry.getKey(), entry.getValue());
+                    }
                 }
-                map.put(qualifier, "");
+
+                rows += 1;
+                int len = qualifiers.length;
+                String line = "";
+                for (int i = 0; i < len; i++) {
+                    String qualifier = qualifiers[i];
+                    if (i == (len - 1)) {
+                        line += map.get(qualifier);
+                    } else {
+                        line += map.get(qualifier) + "\t";
+                    }
+                    map.put(qualifier, "");
+                }
+                writer.write(line + "\n");
             }
-            writer.write(line + "\n");
+        } finally {
+            if (scanner != null) {
+                scanner.close();
+            }
+            if (writer != null) {
+                writer.close();
+            }
         }
-        scanner.close();
-        writer.close();
         return rows;
     }
 
@@ -338,8 +349,8 @@ public class HBaseClient {
         }
 
         scan.setFilter(filterList);
-        ResultScanner ResultScannerFilterList = table.getScanner(scan);
-        return ResultScannerFilterList;
+        ResultScanner scanner = table.getScanner(scan);
+        return scanner;
     }
 
     public void update(String rowKey, String family, Map<String, byte[]> values)

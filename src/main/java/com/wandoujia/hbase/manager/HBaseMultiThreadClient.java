@@ -16,6 +16,11 @@ import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.HTablePool;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
+import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
 import org.apache.hadoop.hbase.util.Bytes;
 
 /**
@@ -29,8 +34,7 @@ public class HBaseMultiThreadClient {
     private HTablePool tablePool;
 
     public HBaseMultiThreadClient() {
-        tablePool = new HTablePool(HBaseConfiguration.create(),
-                defaultThreadNum);
+        this(defaultThreadNum);
     }
 
     public HBaseMultiThreadClient(int threadNum) {
@@ -141,6 +145,65 @@ public class HBaseMultiThreadClient {
                         entry.getValue());
             }
             hTable.put(put);
+        } finally {
+            if (hTable != null) {
+                tablePool.putTable((HTableInterface) hTable);
+            }
+        }
+    }
+
+    /**
+     * @param tableName
+     * @param startRow
+     * @param cacheBlocks
+     * @return
+     * @throws IOException
+     */
+    public ResultScanner getScanner(String tableName, String startRow,
+            boolean cacheBlocks) throws IOException {
+        Scan scan = new Scan(Bytes.toBytes(startRow));
+        scan.setCacheBlocks(cacheBlocks);
+        HTable hTable = (HTable) tablePool.getTable(tableName);
+        try {
+            ResultScanner scanner = hTable.getScanner(scan);
+            return scanner;
+        } finally {
+            if (hTable != null) {
+                tablePool.putTable((HTableInterface) hTable);
+            }
+        }
+    }
+
+    /**
+     * @param tableName
+     * @param startRow
+     * @param stopRow
+     * @param filters
+     * @param opers
+     * @param cacheBlocks
+     * @return
+     * @throws IOException
+     */
+    public ResultScanner getScanner(String tableName, String startRow,
+            String stopRow, Map<String, String> filters,
+            Map<String, CompareOp> opers, boolean cacheBlocks)
+            throws IOException {
+        Scan scan = new Scan(Bytes.toBytes(startRow), Bytes.toBytes(stopRow));
+        scan.setCacheBlocks(cacheBlocks);
+        if (filters != null && opers != null) {
+            FilterList filterList = new FilterList();
+            for (Map.Entry<String, String> entry: filters.entrySet()) {
+                filterList.addFilter(new SingleColumnValueFilter(Bytes
+                        .toBytes(defaultFamily), Bytes.toBytes(entry.getKey()),
+                        opers.get(entry.getKey()), Bytes.toBytes(entry
+                                .getValue())));
+            }
+            scan.setFilter(filterList);
+        }
+        HTable hTable = (HTable) tablePool.getTable(tableName);
+        try {
+            ResultScanner scanner = hTable.getScanner(scan);
+            return scanner;
         } finally {
             if (hTable != null) {
                 tablePool.putTable((HTableInterface) hTable);
