@@ -5,7 +5,7 @@ VERSION=1.0
 
 function usage() {
     echo "sh run.sh <type>"
-    echo "type: HBaseWrite / HBaseStabilityTester / CreateHTable / HBaseSelect / HBaseCount / HBaseDelete / HBaseOperate / HBaseDump / HBaseLoadTable / CreateTablePreSplit / HBaseLoadTest"
+    echo "type: HBaseWrite / HBaseStabilityTester / CreateHTable / HBaseSelect / HBaseCount / HBaseDelete / HBaseOperate / HBaseDump / HBaseLoadTable / CreateTablePreSplit / HBaseLoadTest / HBaseQuery"
 }
 
 
@@ -36,6 +36,8 @@ elif [ $1 == "CreateTablePreSplit" ];then
     CLASS_FILE="com.wandoujia.hbase.manager.CreateTablePreSplit"
 elif [ $1 == "HBaseLoadTest" ];then
     CLASS_FILE="com.wandoujia.hbase.load.test.HBaseLoadTest"
+elif [ $1 == "HBaseQuery" ];then
+    CLASS_FILE="com.wandoujia.hbase.manager.shell.HBaseQuery"
 fi
 
 PARAS="$2"

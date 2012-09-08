@@ -14,6 +14,6 @@ mvn assembly:assembly
 mkdir -p ../$INSTALL_DIR
 mkdir -p ../$INSTALL_DIR/log
 cp target/$SERVICE-$VERSION-jar-with-dependencies.jar ../$INSTALL_DIR
-cp -rf run ../$INSTALL_DIR/
+cp -rf bin ../$INSTALL_DIR/
 cp -rf conf ../$INSTALL_DIR/
 
