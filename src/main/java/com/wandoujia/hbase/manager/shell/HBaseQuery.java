@@ -69,8 +69,8 @@ public class HBaseQuery {
             for (Result result = scanner.next(); result != null; result = scanner
                     .next()) {
                 counter++;
-                Map<String, byte[]> rowColumns = HBaseUtil
-                        .getRowColumns(result);
+                Map<String, String> rowColumns = HBaseUtil.getRowColumns(
+                        result, true);
                 output(rowColumns);
             }
         } finally {
@@ -89,13 +89,12 @@ public class HBaseQuery {
 
     }
 
-    private void output(Map<String, byte[]> rowColumns) throws IOException {
+    private void output(Map<String, String> rowColumns) throws IOException {
         StringBuilder sb = new StringBuilder();
         if (sql.getFields() == null) {
             // print all columns
-            for (Map.Entry<String, byte[]> entry: rowColumns.entrySet()) {
-                sb.append(entry.getKey() + ":" + new String(entry.getValue())
-                        + "\t");
+            for (Map.Entry<String, String> entry: rowColumns.entrySet()) {
+                sb.append(entry.getKey() + ":" + entry.getValue() + "\t");
             }
             sb.replace(sb.length() - 1, sb.length(), "");
         } else {

@@ -1,6 +1,8 @@
 package com.wandoujia.hbase.manager.client;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +11,7 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.FilterList;
@@ -127,17 +130,53 @@ public class HBaseUtil {
         return filter;
     }
 
-    public static Map<String, byte[]> getRowColumns(Result result) {
+    /**
+     * @param result
+     * @param withRowKey
+     * @return
+     */
+    public static Map<String, String> getRowColumns(Result result,
+            boolean withRowKey) {
         if (result == null || result.size() < 1) {
             return null;
         }
-        Map<String, byte[]> rowColumns = new HashMap<String, byte[]>();
-        // put row_key
-        rowColumns.put(KEY_ROW_KEY, result.getRow());
+        Map<String, String> rowColumns = new HashMap<String, String>();
+        if (withRowKey == true) {
+            // put row_key
+            rowColumns.put(KEY_ROW_KEY, new String(result.getRow()));
+        }
         // put columns
         for (KeyValue kv: result.list()) {
-            rowColumns.put(new String(kv.getQualifier()), kv.getValue());
+            rowColumns.put(new String(kv.getQualifier()),
+                    new String(kv.getValue()));
         }
         return rowColumns;
+    }
+
+    /**
+     * @param scanner
+     * @param withRowKey
+     * @return
+     * @throws IOException
+     */
+    public static List<Map<String, String>> getRows(ResultScanner scanner,
+            boolean withRowKey, int maxRows) throws IOException {
+        List<Map<String, String>> rows = new ArrayList<Map<String, String>>();
+        int counter = 0;
+        try {
+            for (Result result = scanner.next(); result != null; result = scanner
+                    .next()) {
+                rows.add(getRowColumns(result, withRowKey));
+                counter++;
+                if (counter >= maxRows) {
+                    break;
+                }
+            }
+            return rows;
+        } finally {
+            if (scanner != null) {
+                scanner.close();
+            }
+        }
     }
 }

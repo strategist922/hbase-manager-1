@@ -153,8 +153,10 @@ public class HBaseMultiThreadClient {
         try {
             Get get = new Get(rowKey.getBytes());
             get.setCacheBlocks(cacheBlocks);
-            for (byte[] column: columns) {
-                get.addColumn(familyName, column);
+            if (columns != null && columns.size() > 0) {
+                for (byte[] column: columns) {
+                    get.addColumn(familyName, column);
+                }
             }
             Result row = table.get(get);
             if (row.raw().length >= 1) {
@@ -183,14 +185,19 @@ public class HBaseMultiThreadClient {
      * @throws IOException
      */
     public ResultScanner getScanner(String tableName, byte[] familyName,
-            String startRow, String stopRow, int caching, boolean cacheBlocks)
-            throws IOException {
+            Set<byte[]> columns, String startRow, String stopRow, int caching,
+            boolean cacheBlocks) throws IOException {
         HTableInterface table = tablePool.getTable(tableName);
         try {
             Scan scan = new Scan(Bytes.toBytes(startRow),
                     Bytes.toBytes(stopRow));
             scan.setCacheBlocks(cacheBlocks);
             scan.setCaching(caching);
+            if (columns != null && columns.size() > 0) {
+                for (byte[] column: columns) {
+                    scan.addColumn(familyName, column);
+                }
+            }
             return table.getScanner(scan);
         } finally {
             if (table != null) {
@@ -212,8 +219,8 @@ public class HBaseMultiThreadClient {
      * @throws IOException
      */
     public ResultScanner getScanner(String tableName, byte[] familyName,
-            String startRow, String stopRow, Filter filter, int caching,
-            boolean cacheBlocks) throws IOException {
+            Set<byte[]> columns, String startRow, String stopRow,
+            Filter filter, int caching, boolean cacheBlocks) throws IOException {
         HTableInterface table = tablePool.getTable(tableName);
         try {
             Scan scan = new Scan(Bytes.toBytes(startRow),
@@ -222,6 +229,11 @@ public class HBaseMultiThreadClient {
             scan.setCaching(caching);
             if (filter != null) {
                 scan.setFilter(filter);
+            }
+            if (columns != null && columns.size() > 0) {
+                for (byte[] column: columns) {
+                    scan.addColumn(familyName, column);
+                }
             }
             return table.getScanner(scan);
         } finally {
